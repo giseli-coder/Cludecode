@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Ranking SDR — RR · V4 Company</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #0a0505;
+      --surface:     #161010;
+      --surface-2:   #1e1414;
+      --surface-3:   #291a1a;
+      --red:         #E31E24;
+      --red-lt:      #FF4D50;
+      --red-dk:      #A1151A;
+      --red-glow:    rgba(227,30,36,0.45);
+      --white:       #FFFFFF;
+      --gray:        #999090;
+      --gray-2:      #4a3d3d;
+      --gray-3:      #2e2222;
+      --silver:      #C0C0C0;
+      --bronze:      #CD7F32;
+    }
+
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+    html,body{
+      width:100%;height:100%;overflow:hidden;
+      background:var(--bg);
+      font-family:'Montserrat',sans-serif;
+      color:var(--white);
+    }
+
+    .bg{
+      position:fixed;inset:0;z-index:0;
+      background:
+        radial-gradient(ellipse at 50% 110%, rgba(227,30,36,.14) 0%, transparent 55%),
+        radial-gradient(ellipse at 90% 10%, rgba(227,30,36,.06) 0%, transparent 45%),
+        var(--bg);
+    }
+    .bg::before{
+      content:'';position:absolute;inset:0;
+      background-image:
+        repeating-linear-gradient(0deg,rgba(255,255,255,.008) 0 1px,transparent 1px 80px),
+        repeating-linear-gradient(90deg,rgba(255,255,255,.008) 0 1px,transparent 1px 80px);
+    }
+
+    .app{
+      position:relative;z-index:1;
+      width:100vw;height:100vh;
+      display:flex;flex-direction:column;
+    }
+
+    /* ═══════ HEADER ═══════ */
+    .hdr{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:10px 28px;
+      background:rgba(0,0,0,.85);
+      border-bottom:1px solid var(--gray-3);
+      flex-shrink:0;position:relative;
+    }
+    .hdr::after{
+      content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+      background:linear-gradient(90deg,transparent 5%,var(--red) 50%,transparent 95%);
+      opacity:.6;
+    }
+    .logo{display:flex;align-items:center;gap:14px;min-width:150px}
+    .logo img{height:38px;width:auto;display:block;border-radius:6px}
+    .logo-fallback{
+      font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;
+      background:linear-gradient(135deg,var(--red),var(--red-dk));
+      padding:5px 12px;border-radius:6px;
+    }
+
+    .hdr-center{
+      position:absolute;left:50%;transform:translateX(-50%);
+      text-align:center;
+    }
+    .hdr-title{
+      font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:6px;
+      background:linear-gradient(135deg,#fff,var(--red-lt));
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .hdr-sub{font-size:8px;font-weight:600;letter-spacing:4px;color:var(--gray);text-transform:uppercase}
+
+    .pill{
+      display:flex;align-items:center;gap:7px;
+      padding:5px 12px;background:var(--surface);
+      border:1px solid var(--gray-3);border-radius:16px;
+      font-size:9px;font-weight:600;letter-spacing:1.5px;color:var(--gray);text-transform:uppercase;
+    }
+    .dot-live{
+      width:5px;height:5px;border-radius:50%;
+      background:#22c55e;box-shadow:0 0 6px #22c55e;
+      animation:pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse{50%{opacity:.3}}
+
+    /* ═══════ REGRAS ═══════ */
+    .rules{
+      display:flex;justify-content:center;gap:10px;
+      padding:6px 0;background:var(--surface);
+      border-bottom:1px solid var(--gray-3);flex-shrink:0;
+      font-size:11px;font-weight:600;color:var(--gray);letter-spacing:.5px;
+    }
+    .rules b{color:var(--red-lt)}
+
+    /* ═══════ DOIS RANKINGS LADO A LADO ═══════ */
+    .boards{flex:1;min-height:0;display:flex}
+    .rk{
+      flex:1 1 0;min-width:0;
+      display:flex;flex-direction:column;
+    }
+    .rk + .rk{border-left:1px solid var(--gray-3)}
+
+    .rk-hdr{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:10px 22px;flex-shrink:0;
+      background:linear-gradient(180deg,var(--surface-2),var(--surface));
+      border-bottom:1px solid var(--gray-3);
+    }
+    .rk-title{
+      font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,2.3vw,40px);letter-spacing:6px;line-height:1;
+      display:flex;align-items:center;gap:12px;
+    }
+    .rk-title::before{
+      content:'';width:5px;height:.85em;border-radius:3px;
+      background:linear-gradient(180deg,var(--red),var(--red-dk));
+      box-shadow:0 0 10px var(--red-glow);
+    }
+    .rk-sub{font-size:8px;font-weight:700;letter-spacing:3px;color:var(--gray);text-transform:uppercase;margin:4px 0 0 17px}
+
+    .btn-launch{
+      background:linear-gradient(135deg,var(--red),var(--red-dk));
+      border:none;padding:9px 16px;border-radius:6px;white-space:nowrap;
+      font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;
+      letter-spacing:2px;text-transform:uppercase;color:#fff;cursor:pointer;
+      display:flex;align-items:center;gap:7px;
+      box-shadow:0 4px 18px var(--red-glow);
+      transition:all .2s;
+    }
+    .btn-launch:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--red-glow)}
+    .btn-launch svg{width:14px;height:14px}
+
+    .rk-body{
+      flex:1;min-height:0;width:100%;
+      display:flex;
+      padding:42px 18px 16px;
+    }
+
+    /* ── PÓDIO TOP 3 ── */
+    .podium{
+      flex:1;min-width:0;
+      display:flex;align-items:flex-end;justify-content:center;
+      gap:clamp(12px,1.4vw,26px);
+    }
+    .card{
+      position:relative;
+      flex:1 1 0;min-width:0;max-width:340px;
+      display:flex;flex-direction:column;
+      background:linear-gradient(180deg,var(--surface-2),var(--surface));
+      border:1px solid var(--gray-3);border-radius:14px;
+      overflow:visible;transition:transform .3s;
+      padding:0 0 12px;
+    }
+    .card:hover{transform:translateY(-6px)}
+    .card::before{
+      content:'';position:absolute;top:0;left:0;right:0;height:4px;
+      border-radius:14px 14px 0 0;z-index:2;
+    }
+
+    .p1{order:2;height:100%;z-index:3}
+    .p2{order:1;height:88%;z-index:2}
+    .p3{order:3;height:88%;z-index:1}
+
+    .p1{border-color:var(--red);box-shadow:0 0 50px rgba(227,30,36,.25),0 0 90px rgba(227,30,36,.08)}
+    .p1::before{background:linear-gradient(90deg,var(--red),var(--red-lt));box-shadow:0 0 14px var(--red-glow);height:5px}
+    .p2::before{background:linear-gradient(90deg,var(--silver),#ddd)}
+    .p3::before{background:linear-gradient(90deg,var(--bronze),#e0a060)}
+
+    .card-rank{
+      position:absolute;top:-28px;left:50%;transform:translateX(-50%);
+      z-index:6;
+      width:54px;height:54px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1;
+      color:#fff;
+      background:linear-gradient(135deg,var(--gray-2),#241818);
+      border:3px solid var(--bg);
+      box-shadow:0 6px 18px rgba(0,0,0,.6);
+    }
+    .p1 .card-rank{
+      width:66px;height:66px;font-size:32px;top:-34px;
+      background:linear-gradient(135deg,var(--red),var(--red-dk));
+      box-shadow:0 8px 24px rgba(0,0,0,.6),0 0 28px var(--red-glow);
+    }
+    .p2 .card-rank{background:linear-gradient(135deg,var(--silver),#8a8a8a);color:#1a1a1a}
+    .p3 .card-rank{background:linear-gradient(135deg,var(--bronze),#8a5a20)}
+
+    .card-name-bar{
+      padding:28px 10px 8px;flex-shrink:0;
+      display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;
+    }
+    .p1 .card-name-bar{padding-top:38px}
+    .card-name{
+      font-size:clamp(12px,1.25vw,20px);font-weight:800;letter-spacing:1.2px;text-transform:uppercase;
+      max-width:100%;overflow-wrap:anywhere;
+    }
+    .card-label{font-size:8px;font-weight:700;letter-spacing:2px;color:var(--gray);text-transform:uppercase}
+
+    .card-photo{
+      flex:1;min-height:0;margin:0 10px;
+      background:var(--bg);border:1px solid var(--gray-3);border-radius:8px;
+      overflow:hidden;position:relative;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .card-photo img.foto{width:100%;height:100%;object-fit:cover;object-position:center 20%;display:block}
+    .card-photo::after{
+      content:'';position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(180deg,transparent 45%,rgba(0,0,0,.9) 100%);
+      border-radius:8px;
+    }
+    .card-photo .ph{display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.18}
+    .card-photo .ph svg{width:min(6vw,56px);height:min(6vw,56px)}
+    .card-photo .ph span{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase}
+
+    .score-over{
+      position:absolute;bottom:0;left:0;right:0;z-index:3;
+      padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-end;
+    }
+    .score-num{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,3.6vw,56px);line-height:.85;color:#fff}
+    .p1 .score-num{
+      font-size:clamp(38px,4.4vw,68px);
+      background:linear-gradient(135deg,#fff,var(--red-lt));
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .score-lbl{font-size:8px;font-weight:700;letter-spacing:1.5px;color:var(--gray);text-transform:uppercase;padding-bottom:4px}
+
+    .empty,.loader{
+      flex:1;align-self:center;text-align:center;
+      color:var(--red-lt);font-size:13px;font-weight:700;
+      letter-spacing:3px;text-transform:uppercase;
+    }
+    .loader{animation:pulse 1.5s ease-in-out infinite}
+    .empty.err{color:#ff6b6b;letter-spacing:1px;line-height:1.6;padding:0 20px}
+
+    /* ═══════ MODAL ═══════ */
+    .overlay{
+      position:fixed;inset:0;z-index:100;
+      background:rgba(0,0,0,.88);backdrop-filter:blur(10px);
+      display:none;align-items:center;justify-content:center;
+    }
+    .overlay.open{display:flex;animation:fi .25s}
+    @keyframes fi{from{opacity:0}to{opacity:1}}
+
+    .modal{
+      position:relative;
+      background:linear-gradient(180deg,var(--surface-2),var(--bg));
+      border:1px solid var(--gray-3);border-top:3px solid var(--red);
+      border-radius:14px;padding:28px;
+      width:400px;max-width:94vw;
+      box-shadow:0 25px 80px rgba(0,0,0,.9),0 0 50px rgba(227,30,36,.1);
+    }
+    .m-title{
+      font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;
+      margin-bottom:22px;display:flex;align-items:center;gap:10px;padding-right:38px;
+    }
+    .m-title::before{
+      content:'';width:4px;height:24px;border-radius:2px;
+      background:linear-gradient(180deg,var(--red),var(--red-dk));
+      box-shadow:0 0 8px var(--red-glow);
+    }
+    .m-close{
+      position:absolute;top:18px;right:22px;
+      background:none;border:none;color:var(--gray);font-size:18px;cursor:pointer;
+      width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+      border-radius:6px;transition:all .2s;
+    }
+    .m-close:hover{color:var(--red-lt);background:var(--surface-3)}
+
+    .m-field{margin-bottom:18px}
+    .m-label{
+      display:block;font-size:9px;font-weight:700;
+      letter-spacing:2.5px;color:var(--gray);text-transform:uppercase;margin-bottom:6px;
+    }
+    .m-sel{
+      width:100%;background:var(--bg);border:1px solid var(--gray-3);
+      border-radius:8px;padding:12px 14px;color:#fff;
+      font-family:'Montserrat',sans-serif;font-size:13px;font-weight:600;
+      outline:none;transition:all .2s;
+    }
+    .m-sel:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227,30,36,.14)}
+    .m-sel option{background:var(--bg)}
+
+    .m-box{display:flex;flex-direction:column;gap:5px;margin-bottom:20px}
+    .m-box-label{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--gray);text-transform:uppercase;text-align:center}
+    .m-box-input{
+      background:var(--bg);border:1px solid var(--gray-3);border-radius:8px;
+      padding:14px 6px;color:#fff;font-family:'Montserrat',sans-serif;
+      font-size:26px;font-weight:800;text-align:center;outline:none;
+      width:100%;transition:all .2s;
+    }
+    .m-box-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(227,30,36,.14);color:var(--red-lt)}
+    .m-box-input[type=number]{-moz-appearance:textfield}
+    .m-box-input::-webkit-outer-spin-button,.m-box-input::-webkit-inner-spin-button{-webkit-appearance:none}
+
+    .m-btn{
+      width:100%;padding:14px;border:none;border-radius:8px;
+      background:linear-gradient(135deg,var(--red),var(--red-dk));
+      font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;
+      letter-spacing:3px;text-transform:uppercase;color:#fff;cursor:pointer;
+      box-shadow:0 6px 22px var(--red-glow);transition:all .2s;
+    }
+    .m-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px var(--red-glow)}
+    .m-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+    .m-msg{font-size:11px;font-weight:600;text-align:center;margin-top:10px;min-height:16px;letter-spacing:.5px}
+
+    /* ═══════ TELAS PEQUENAS (celular / janela estreita): empilha os dois rankings ═══════ */
+    @media (max-width:900px){
+      html,body{overflow:auto;height:auto}
+      .app{height:auto;min-height:100vh}
+      .boards{flex-direction:column}
+      .rk{min-height:92vh}
+      .rk + .rk{border-left:none;border-top:1px solid var(--gray-3)}
+      .hdr-center{position:static;transform:none}
+      .hdr{flex-wrap:wrap;gap:8px;justify-content:center}
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="logo">
+      <!-- LOGO: apague a linha <span class="logo-fallback"> abaixo e cole no lugar a sua tag <img src="data:image/png;base64,..." alt="V4 Company"> -->
+      <span class="logo-fallback">V4 COMPANY</span>
+    </div>
+    <div class="hdr-center">
+      <div class="hdr-title">RANKING SDR · RR</div>
+      <div class="hdr-sub">V4 Company · Competição de Pré-vendas</div>
+    </div>
+    <div class="pill"><div class="dot-live"></div><span id="status">Carregando...</span></div>
+  </header>
+
+  <!-- REGRAS -->
+  <div class="rules">Ranking pelo total de <b>RR (Reuniões Realizadas)</b> — cada RR lançada soma 1 no placar</div>
+
+  <!-- OS DOIS RANKINGS (montados pelo JavaScript) -->
+  <div class="boards" id="boards">
+    <section class="rk"><div class="rk-body"><div class="loader">CARREGANDO RANKING...</div></div></section>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="modal">
+  <div class="modal">
+    <button class="m-close" onclick="fecharModal()">✕</button>
+    <div class="m-title" id="m-title">LANÇAR RR</div>
+
+    <div class="m-field">
+      <label class="m-label">SDR</label>
+      <select class="m-sel" id="m-sdr"><option value="">Selecione o SDR...</option></select>
+    </div>
+
+    <div class="m-box">
+      <label class="m-box-label">Quantidade de RR</label>
+      <input class="m-box-input" id="m-rr" type="number" min="1" value="1">
+    </div>
+
+    <button class="m-btn" id="m-btn" onclick="confirmar()">CONFIRMAR LANÇAMENTO</button>
+    <div class="m-msg" id="m-msg"></div>
+  </div>
+</div>
+
+<script>
+const REFRESH = 30;          // segundos entre atualizações
+let boards    = [];          // rankings vindos do servidor
+let lastSig   = '';          // evita redesenhar (e piscar as fotos) quando nada mudou
+let modalKey  = null;        // ranking que está sendo lançado no modal
+
+const $ = id => document.getElementById(id);
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+
+function driveThumb(url){
+  if(!url) return null;
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+  return m ? 'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w600' : url;
+}
+
+function personSvg(){
+  return '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="32" cy="22" r="10"/><path d="M14 56Q14 38 32 38Q50 38 50 56"/></svg>';
+}
+
+function renderCard(r, pos, imgs){
+  const foto  = driveThumb(imgs[r.sdr] || '');
+  const nome  = esc(r.sdr);
+  const fotoH = foto
+    ? `<img class="foto" src="${esc(foto)}" alt="${nome}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph" style="display:none">${personSvg()}<span>${nome}</span></div>`
+    : `<div class="ph">${personSvg()}<span>${nome}</span></div>`;
+
+  return `
+    <div class="card p${pos}">
+      <div class="card-rank">${pos}º</div>
+      <div class="card-name-bar">
+        <div class="card-name">${nome}</div>
+        <div class="card-label">${pos===1?'CAMPEÃO':pos===2?'VICE':'3º LUGAR'}</div>
+      </div>
+      <div class="card-photo">
+        ${fotoH}
+        <div class="score-over">
+          <div class="score-num">${esc(r.rr)}</div>
+          <div class="score-lbl">RR</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderBoard(b){
+  let body;
+  if(b.error){
+    body = `<div class="empty err">ERRO: ${esc(b.error)}</div>`;
+  } else if(!b.sdrs.length){
+    body = '<div class="empty">SEM SDRs CADASTRADOS</div>';
+  } else {
+    const top3 = b.sdrs.slice().sort((a,c) => c.rr - a.rr).slice(0,3);
+    body = '<div class="podium">' + top3.map((r,i) => renderCard(r, i+1, b.imgs || {})).join('') + '</div>';
+  }
+
+  return `
+  <section class="rk">
+    <div class="rk-hdr">
+      <div>
+        <div class="rk-title">${esc(b.nome)}</div>
+        <div class="rk-sub">TOP 3 · REUNIÕES REALIZADAS</div>
+      </div>
+      <button class="btn-launch" onclick="abrirModal('${esc(b.key)}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        LANÇAR RR
+      </button>
+    </div>
+    <div class="rk-body">${body}</div>
+  </section>`;
+}
+
+function atualizar(){
+  $('status').textContent = 'Sincronizando...';
+  google.script.run
+    .withSuccessHandler(res => {
+      if(!res || !res.success){ $('status').textContent = 'Erro'; return; }
+      boards = res.rankings;
+      const sig = JSON.stringify(boards);
+      if(sig !== lastSig){
+        lastSig = sig;
+        $('boards').innerHTML = boards.map(renderBoard).join('');
+      }
+      $('status').textContent = 'Ao vivo · ' + new Date().toLocaleTimeString('pt-BR');
+    })
+    .withFailureHandler(() => { $('status').textContent = 'Erro de conexão'; })
+    .getDados();
+}
+
+/* ───────── MODAL ───────── */
+function abrirModal(key){
+  const b = boards.find(x => x.key === key);
+  if(!b) return;
+  modalKey = key;
+
+  $('m-title').textContent = 'LANÇAR RR · ' + b.nome;
+
+  const sel = $('m-sdr');
+  sel.innerHTML = '<option value="">Selecione o SDR...</option>';
+  b.sdrs.map(s => s.sdr).sort((a,c) => a.localeCompare(c,'pt-BR')).forEach(nome => {
+    const o = document.createElement('option');
+    o.value = nome; o.textContent = nome;
+    sel.appendChild(o);
+  });
+
+  $('m-rr').value = 1;
+  $('m-msg').textContent = '';
+  $('m-btn').disabled = false;
+  $('modal').classList.add('open');
+}
+function fecharModal(){ $('modal').classList.remove('open'); }
+$('modal').addEventListener('click', e => { if(e.target.id === 'modal') fecharModal(); });
+$('m-rr').addEventListener('keydown', e => { if(e.key === 'Enter') confirmar(); });
+
+function confirmar(){
+  const sdr = $('m-sdr').value;
+  const rr  = Math.floor(+$('m-rr').value) || 0;
+  const msg = $('m-msg');
+  const btn = $('m-btn');
+
+  if(!sdr){ msg.style.color = '#ff6b6b'; msg.textContent = 'SELECIONE O SDR!'; return; }
+  if(rr <= 0){ msg.style.color = '#ff6b6b'; msg.textContent = 'INFORME UMA QUANTIDADE VÁLIDA.'; return; }
+
+  btn.disabled = true;
+  msg.style.color = 'var(--gray)'; msg.textContent = 'REGISTRANDO...';
+
+  google.script.run
+    .withSuccessHandler(res => {
+      if(res && res.success){
+        msg.style.color = '#22c55e'; msg.textContent = '✓ LANÇAMENTO REGISTRADO!';
+        setTimeout(() => { fecharModal(); atualizar(); }, 1000);
+      } else {
+        msg.style.color = '#ff6b6b'; msg.textContent = 'ERRO: ' + ((res && res.error) || 'desconhecido');
+        btn.disabled = false;
+      }
+    })
+    .withFailureHandler(() => {
+      msg.style.color = '#ff6b6b'; msg.textContent = 'FALHA NA CONEXÃO.';
+      btn.disabled = false;
+    })
+    .lancar({ ranking: modalKey, sdr: sdr, rr: rr });
+}
+
+document.addEventListener('DOMContentLoaded', () => { atualizar(); setInterval(atualizar, REFRESH * 1000); });
+</script>
+</body>
+</html>

@@ -16,8 +16,8 @@
  */
 
 const RANKINGS = [
-  { key: 'blackbox', nome: 'BLACK BOX', id: '' },
-  { key: 'bday',     nome: 'BDAY',      id: 'COLE_AQUI_O_ID_DA_PLANILHA_BDAY' }
+  { key: 'blackbox', nome: 'BLACK BOX', id: '1sX2lFqGjFQnU6DmpdsbRzYsAWq54GKSAJLfuohVjwyU' },
+  { key: 'bday',     nome: 'BDAY',      id: '1KHoQKtTO7BWSyDL1COYpF5hqUxry5IqGojJbaRdy1ys' }
 ];
 
 const ABA_EQUIPES   = 'Equipes';

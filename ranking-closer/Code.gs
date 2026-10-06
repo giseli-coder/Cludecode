@@ -2,7 +2,7 @@
  * RANKING CLOSER — STAAGE
  * Backend Google Apps Script
  *
- * REGRA:  quem fizer MAIS CASH COLLECTED fica em 1º. Top 4.
+ * REGRA:  quem fizer MAIS CASH COLLECTED fica em 1º. Só os PARTICIPANTES competem.
  * DESEMPATE: ordem alfabética.
  *
  * DE ONDE VÊM OS NÚMEROS
@@ -18,8 +18,11 @@
 const METAS_ID  = '17WLibwAUJb9Z6T-z1PPH8JU1h6umR-rw3efBV73MDeA';  // trecho da URL entre /d/ e /edit
 const ABA_METAS = 'CONVERSÃO CLOSER - OUTUBRO  26';                // troque quando virar o mês
 
+// Quem participa da competição (o nome pode ser parcial e sem acento: "Junior" encontra "JUNIOR").
+// Para entrar ou sair alguém, é só mexer nesta lista.
+const PARTICIPANTES = ['Junior', 'Luiz', 'Fernando', 'Tayla'];
+
 const ABA_IMGS = 'Imgs';
-const TOP      = 4;
 
 // ═══════════════ SERVIR HTML ═══════════════
 // O arquivo HTML do projeto precisa se chamar exatamente "index".
@@ -151,34 +154,23 @@ function getDados() {
         '". Cada quadro precisa ter o nome no topo, o cabeçalho "Realizado" e a linha "Cash Collected".');
     }
 
-    const vistos = [];
-    tab.lista = tab.lista.filter(p => {
-      if (vistos.some(n => n === norm(p.nome))) { avisos.push('Nome repetido: "' + p.nome + '" (usei o primeiro quadro).'); return false; }
-      vistos.push(norm(p.nome)); return true;
-    });
-
     const fotos = lerFotos();
-    const ranking = tab.lista.map(p => {
-      const f = fotos.find(x => mesmoNome(x.nome, p.nome));
-      return { nome: p.nome, cash: p.cash, foto: f ? f.url : '' };
+    const ranking = PARTICIPANTES.map(nome => {
+      const b = tab.lista.find(x => mesmoNome(x.nome, nome));
+      if (!b) {
+        avisos.push('Não achei "' + nome + '" na aba de metas (nomes lá: ' + tab.lista.map(x => x.nome).join(', ') + ').');
+      }
+      const f = fotos.find(x => mesmoNome(x.nome, nome));
+      return { nome: nome, cash: b ? b.cash : 0, foto: f ? f.url : '' };
     });
 
     ranking.sort((a, b) => b.cash - a.cash || a.nome.localeCompare(b.nome, 'pt-BR'));
 
-    const total = ranking.reduce((s, p) => s + Math.max(0, p.cash), 0);
-    const lider = ranking[0].cash;
-    ranking.forEach(p => {
-      p.parte = total > 0 ? Math.round(Math.max(0, p.cash) / total * 100) : 0;   // % do cash total
-      p.falta = Math.max(0, lider - p.cash);                                      // distância até o 1º
-    });
-
     return {
       success: true,
-      ranking: ranking.slice(0, TOP),
-      total:   total,
-      qtd:     ranking.length,
+      ranking: ranking,
       avisos:  avisos,
-      fonte:   { aba: aba.getName(), coluna: tab.titulo, linha: tab.linha }
+      fonte:   { aba: aba.getName() }
     };
   } catch (e) {
     return { success: false, error: String(e.message || e) };

@@ -320,10 +320,6 @@ function renderCard(p, pos){
         <div class="score-num"><small>R$</small>${brl(p.cash)}</div>
         <div class="score-lbl">Cash Collected</div>
       </div>
-      <div class="stats">
-        <div class="stat"><div class="stat-v">${esc(p.parte)}%</div><div class="stat-l">Do cash total</div></div>
-        <div class="stat"><div class="stat-v">${pos === 1 ? '—' : '-' + brl(p.falta)}</div><div class="stat-l">${pos === 1 ? 'Líder' : 'Para o 1º (R$)'}</div></div>
-      </div>
     </div>`;
 }
 
@@ -335,7 +331,6 @@ function render(res){
 
   const partes = [];
   if(res.fonte && res.fonte.aba) partes.push('Fonte: <b>' + esc(res.fonte.aba) + '</b>');
-  partes.push('Cash total do time: <b>R$ ' + brl(res.total) + '</b> · ' + esc(res.qtd) + ' closers');
   (res.avisos || []).forEach(a => partes.push('<span class="warn">⚠ ' + esc(a) + '</span>'));
   $('footer').innerHTML = partes.map(x => '<span>' + x + '</span>').join('');
 }

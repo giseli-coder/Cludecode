@@ -18,7 +18,7 @@
  */
 
 // ═══════════════ CONFIGURAÇÃO (é só aqui que você mexe) ═══════════════
-const METAS_ID  = 'COLE_AQUI_O_ID_DA_PLANILHA_DE_METAS';  // trecho da URL entre /d/ e /edit
+const METAS_ID  = '17WLibwAUJb9Z6T-z1PPH8JU1h6umR-rw3efBV73MDeA';  // trecho da URL entre /d/ e /edit
 const ABA_METAS = 'MENSAL SDR - OUTUBRO 26';              // troque quando virar o mês
 
 const PTS_RA    = 1;

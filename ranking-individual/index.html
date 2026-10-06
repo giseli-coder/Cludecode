@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Ranking Individual SDR — STAAGE</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #060606;
+      --surface:     #111111;
+      --surface-2:   #1a1a1a;
+      --orange:      #FF6B00;
+      --orange-lt:   #FF8C33;
+      --orange-dk:   #CC5500;
+      --orange-glow: rgba(255,107,0,0.4);
+      --orange-soft: rgba(255,107,0,0.08);
+      --white:       #FFFFFF;
+      --gray:        #888888;
+      --gray-2:      #444444;
+      --gray-3:      #2a2a2a;
+      --silver:      #C0C0C0;
+      --bronze:      #CD7F32;
+    }
+
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+    html,body{
+      width:100%;height:100%;overflow:hidden;
+      background:var(--bg);
+      font-family:'Montserrat',sans-serif;
+      color:var(--white);
+    }
+
+    .bg{
+      position:fixed;inset:0;z-index:0;
+      background:
+        radial-gradient(ellipse at 50% 110%, rgba(255,107,0,.10) 0%, transparent 55%),
+        radial-gradient(ellipse at 90% 10%, rgba(255,107,0,.05) 0%, transparent 45%),
+        var(--bg);
+    }
+    .bg::before{
+      content:'';position:absolute;inset:0;
+      background-image:
+        repeating-linear-gradient(0deg,rgba(255,255,255,.008) 0 1px,transparent 1px 80px),
+        repeating-linear-gradient(90deg,rgba(255,255,255,.008) 0 1px,transparent 1px 80px);
+    }
+
+    .app{
+      position:relative;z-index:1;
+      width:100vw;height:100vh;
+      display:flex;flex-direction:column;
+    }
+
+    /* ═══════ HEADER ═══════ */
+    .hdr{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:10px 28px;
+      background:rgba(0,0,0,.85);
+      border-bottom:1px solid var(--gray-3);
+      flex-shrink:0;position:relative;
+    }
+    .hdr::after{
+      content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+      background:linear-gradient(90deg,transparent 5%,var(--orange) 50%,transparent 95%);
+      opacity:.5;
+    }
+    .logo{display:flex;align-items:center;gap:14px}
+    .logo-icon{
+      width:38px;height:38px;
+      background:linear-gradient(135deg,var(--orange),var(--orange-dk));
+      border-radius:8px;display:flex;align-items:center;justify-content:center;
+      font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;
+      box-shadow:0 0 18px var(--orange-glow);
+    }
+    .logo-text{line-height:1}
+    .logo-name{font-size:20px;font-weight:900;letter-spacing:4px}
+    .logo-name span{color:var(--orange)}
+    .logo-sub{font-size:8px;font-weight:600;letter-spacing:3px;color:var(--gray);text-transform:uppercase;margin-top:2px}
+
+    .hdr-center{
+      position:absolute;left:50%;transform:translateX(-50%);
+      text-align:center;
+    }
+    .hdr-title{
+      font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:6px;
+      background:linear-gradient(135deg,#fff,var(--orange-lt));
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .hdr-sub{font-size:8px;font-weight:600;letter-spacing:4px;color:var(--gray);text-transform:uppercase}
+
+    .pill{
+      display:flex;align-items:center;gap:7px;
+      padding:5px 12px;background:var(--surface);
+      border:1px solid var(--gray-3);border-radius:16px;
+      font-size:9px;font-weight:600;letter-spacing:1.5px;color:var(--gray);text-transform:uppercase;
+    }
+    .dot-live{
+      width:5px;height:5px;border-radius:50%;
+      background:#22c55e;box-shadow:0 0 6px #22c55e;
+      animation:pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse{50%{opacity:.3}}
+
+    /* ═══════ REGRAS ═══════ */
+    .rules{
+      display:flex;justify-content:center;gap:36px;
+      padding:6px 0;background:var(--surface);
+      border-bottom:1px solid var(--gray-3);flex-shrink:0;
+    }
+    .rule{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--gray);letter-spacing:.5px}
+    .badge{
+      display:inline-flex;align-items:center;justify-content:center;
+      padding:2px 9px;border-radius:4px;font-size:12px;font-weight:800;
+    }
+    .b-ra{background:rgba(255,107,0,.12);border:1px solid rgba(255,107,0,.25);color:var(--orange-lt)}
+    .b-v{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:#4ade80}
+
+    /* ═══════ TOP 4 EM FILEIRA (1º → 4º) ═══════ */
+    .row{
+      flex:1;min-height:0;width:100%;
+      display:flex;align-items:flex-end;justify-content:center;
+      gap:clamp(14px,1.6vw,30px);padding:50px 28px 14px;
+    }
+    .card{
+      position:relative;
+      flex:1 1 0;min-width:0;max-width:440px;
+      display:flex;flex-direction:column;
+      background:linear-gradient(180deg,var(--surface-2),var(--surface));
+      border:1px solid var(--gray-3);border-radius:16px;
+      overflow:visible;transition:transform .3s;
+      padding:0 0 12px;
+    }
+    .card:hover{transform:translateY(-6px)}
+    .card::before{
+      content:'';position:absolute;top:0;left:0;right:0;height:4px;
+      border-radius:16px 16px 0 0;z-index:2;
+    }
+
+    /* degraus: o 1º é o mais alto, o 4º o mais baixo */
+    .p1{height:100%;z-index:4}
+    .p2{height:95%;z-index:3}
+    .p3{height:90%;z-index:2}
+    .p4{height:85%;z-index:1}
+
+    .p1{border-color:var(--orange);box-shadow:0 0 60px rgba(255,107,0,.22),0 0 100px rgba(255,107,0,.07)}
+    .p1::before{background:linear-gradient(90deg,var(--orange),var(--orange-lt));box-shadow:0 0 14px var(--orange-glow);height:5px}
+    .p2::before{background:linear-gradient(90deg,var(--silver),#ddd)}
+    .p3::before{background:linear-gradient(90deg,var(--bronze),#e0a060)}
+    .p4::before{background:linear-gradient(90deg,#5c5c5c,#8a8a8a)}
+
+    .card-rank{
+      position:absolute;top:-30px;left:50%;transform:translateX(-50%);
+      z-index:6;
+      width:56px;height:56px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;
+      color:#fff;
+      background:linear-gradient(135deg,#5c5c5c,#333);
+      border:3px solid var(--bg);
+      box-shadow:0 6px 18px rgba(0,0,0,.6);
+    }
+    .p1 .card-rank{
+      width:68px;height:68px;font-size:34px;top:-36px;
+      background:linear-gradient(135deg,var(--orange),var(--orange-dk));
+      box-shadow:0 8px 24px rgba(0,0,0,.6),0 0 28px var(--orange-glow);
+    }
+    .p2 .card-rank{background:linear-gradient(135deg,var(--silver),#8a8a8a);color:#1a1a1a}
+    .p3 .card-rank{background:linear-gradient(135deg,var(--bronze),#8a5a20)}
+
+    .card-name-bar{
+      padding:30px 10px 8px;flex-shrink:0;
+      display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;
+    }
+    .p1 .card-name-bar{padding-top:40px}
+    .card-name{
+      font-size:clamp(14px,1.6vw,24px);font-weight:900;letter-spacing:1.5px;text-transform:uppercase;
+      max-width:100%;overflow-wrap:anywhere;
+    }
+    .card-label{font-size:8px;font-weight:700;letter-spacing:3px;color:var(--gray);text-transform:uppercase}
+    .p1 .card-label{color:var(--orange-lt)}
+
+    .card-photo{
+      flex:1;min-height:0;margin:0 12px;
+      background:var(--bg);border:1px solid var(--gray-3);border-radius:10px;
+      overflow:hidden;position:relative;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .card-photo img{width:100%;height:100%;object-fit:cover;object-position:center 20%;display:block}
+    .card-photo::after{
+      content:'';position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(180deg,transparent 60%,rgba(0,0,0,.55) 100%);
+      border-radius:10px;
+    }
+    .card-photo .ph{display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.18}
+    .card-photo .ph svg{width:min(7vw,60px);height:min(7vw,60px)}
+    .card-photo .ph span{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase}
+
+    .score{
+      margin:10px 12px 0;padding:10px;flex-shrink:0;
+      background:var(--bg);border:1px solid var(--gray-3);border-radius:10px;
+      display:flex;flex-direction:column;align-items:center;line-height:.9;
+    }
+    .p1 .score{border-color:rgba(255,107,0,.35);background:var(--orange-soft)}
+    .score-num{font-family:'Bebas Neue',sans-serif;font-size:clamp(40px,4.8vw,76px);line-height:.85;color:#fff}
+    .p1 .score-num{
+      font-size:clamp(48px,5.8vw,92px);
+      background:linear-gradient(135deg,#fff,var(--orange-lt));
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    }
+    .score-lbl{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--gray);text-transform:uppercase;margin-top:5px}
+
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 12px 0;flex-shrink:0}
+    .stat{
+      background:var(--bg);border:1px solid var(--gray-3);border-radius:6px;
+      padding:8px 4px;display:flex;flex-direction:column;align-items:center;line-height:1;
+    }
+    .stat-v{font-size:clamp(16px,1.9vw,26px);font-weight:800;color:#fff}
+    .stat-l{font-size:8px;font-weight:700;letter-spacing:1.5px;color:var(--gray);text-transform:uppercase;margin-top:4px}
+
+    .empty,.loader{
+      align-self:center;text-align:center;width:100%;
+      color:var(--orange);font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+    }
+    .loader{animation:pulse 1.5s ease-in-out infinite}
+    .empty.err{color:#ff6b6b;letter-spacing:1px;line-height:1.6;padding:0 40px}
+
+    /* ═══════ RODAPÉ ═══════ */
+    .footer{
+      flex-shrink:0;padding:8px 24px;
+      background:var(--surface);border-top:1px solid var(--gray-3);
+      display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 22px;
+      font-size:10px;font-weight:600;letter-spacing:1.2px;color:var(--gray);text-transform:uppercase;
+    }
+    .footer b{color:var(--orange-lt);font-weight:700}
+    .warn{color:#ffb020;text-transform:none;letter-spacing:.3px;font-weight:600}
+
+    /* ═══════ TELAS PEQUENAS ═══════ */
+    @media (max-width:900px){
+      html,body{overflow:auto;height:auto}
+      .app{height:auto;min-height:100vh}
+      .row{flex-wrap:wrap;align-items:stretch;padding-top:54px}
+      .card,.p1,.p2,.p3,.p4{flex:1 1 42%;height:480px}
+      .hdr{flex-wrap:wrap;gap:8px;justify-content:center}
+      .hdr-center{position:static;transform:none}
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="app">
+
+  <header class="hdr">
+    <div class="logo">
+      <div class="logo-icon">S</div>
+      <div class="logo-text">
+        <div class="logo-name">STA<span>AGE</span></div>
+        <div class="logo-sub">Pré-vendas · Ranking Individual</div>
+      </div>
+    </div>
+    <div class="hdr-center">
+      <div class="hdr-title">RANKING INDIVIDUAL</div>
+      <div class="hdr-sub">Competição de Pré-vendas 2026</div>
+    </div>
+    <div class="pill"><div class="dot-live"></div><span id="status">Carregando...</span></div>
+  </header>
+
+  <div class="rules">
+    <div class="rule"><span class="badge b-ra">1 PT</span> por RA</div>
+    <div class="rule"><span class="badge b-v">2 PTS</span> por Venda</div>
+  </div>
+
+  <div class="row" id="row"><div class="loader">CARREGANDO RANKING...</div></div>
+
+  <div class="footer" id="footer"></div>
+
+</div>
+
+<script>
+const TOP     = 4;     // quantos aparecem no ranking
+const REFRESH = 60;    // segundos entre atualizações
+const LABELS  = {1:'CAMPEÃO', 2:'2º LUGAR', 3:'3º LUGAR', 4:'4º LUGAR'};
+
+const $ = id => document.getElementById(id);
+let lastSig = '';
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+
+function driveThumb(url){
+  if(!url) return null;
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+  return m ? 'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w600' : url;
+}
+
+function personSvg(){
+  return '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="32" cy="22" r="10"/><path d="M14 56Q14 38 32 38Q50 38 50 56"/></svg>';
+}
+
+function renderCard(p, pos){
+  const foto = driveThumb(p.foto);
+  const nome = esc(p.nome);
+  const fotoH = foto
+    ? `<img src="${esc(foto)}" alt="${nome}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ph" style="display:none">${personSvg()}<span>${nome}</span></div>`
+    : `<div class="ph">${personSvg()}<span>${nome}</span></div>`;
+
+  return `
+    <div class="card p${pos}">
+      <div class="card-rank">${pos}º</div>
+      <div class="card-name-bar">
+        <div class="card-name">${nome}</div>
+        <div class="card-label">${LABELS[pos] || pos + 'º LUGAR'}</div>
+      </div>
+      <div class="card-photo">${fotoH}</div>
+      <div class="score">
+        <div class="score-num">${esc(p.pontos)}</div>
+        <div class="score-lbl">Pontos</div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-v">${esc(p.ra)}</div><div class="stat-l">RA</div></div>
+        <div class="stat"><div class="stat-v">${esc(p.v)}</div><div class="stat-l">Vendas</div></div>
+      </div>
+    </div>`;
+}
+
+function render(res){
+  const top = res.ranking.slice(0, TOP);
+  $('row').innerHTML = top.length
+    ? top.map((p,i) => renderCard(p, i+1)).join('')
+    : '<div class="empty">SEM PARTICIPANTES</div>';
+
+  const partes = [];
+  if(res.fonte && res.fonte.aba)     partes.push('Fonte: <b>' + esc(res.fonte.aba) + '</b>');
+  if(res.fonte && res.fonte.periodo) partes.push('Período: <b>' + esc(res.fonte.periodo) + '</b>');
+  (res.avisos || []).forEach(a => partes.push('<span class="warn">⚠ ' + esc(a) + '</span>'));
+  $('footer').innerHTML = partes.map(x => '<span>' + x + '</span>').join('');
+}
+
+function atualizar(){
+  $('status').textContent = 'Sincronizando...';
+  google.script.run
+    .withSuccessHandler(res => {
+      if(!res || !res.success){
+        $('status').textContent = 'Erro';
+        $('row').innerHTML = '<div class="empty err">ERRO: ' + esc((res && res.error) || 'desconhecido') + '</div>';
+        lastSig = '';
+        return;
+      }
+      const sig = JSON.stringify(res);
+      if(sig !== lastSig){ lastSig = sig; render(res); }   // só redesenha se algo mudou (não pisca as fotos)
+      $('status').textContent = 'Ao vivo · ' + new Date().toLocaleTimeString('pt-BR');
+    })
+    .withFailureHandler(() => { $('status').textContent = 'Erro de conexão'; })
+    .getDados();
+}
+
+document.addEventListener('DOMContentLoaded', () => { atualizar(); setInterval(atualizar, REFRESH * 1000); });
+</script>
+</body>
+</html>

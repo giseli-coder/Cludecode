@@ -39,7 +39,7 @@ function doGet() {
 // Maiúsculas, sem acento e sem espaços repetidos: "  Tayla  " -> "TAYLA"
 function norm(s) {
   return String(s == null ? '' : s)
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toUpperCase().replace(/\s+/g, ' ').trim();
 }
 

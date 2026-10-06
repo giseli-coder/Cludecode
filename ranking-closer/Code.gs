@@ -37,7 +37,7 @@ function doGet() {
 // Maiúsculas, sem acento e sem espaços repetidos: "  Conversão " -> "CONVERSAO"
 function norm(s) {
   return String(s == null ? '' : s)
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toUpperCase().replace(/\s+/g, ' ').trim();
 }
 
@@ -123,7 +123,7 @@ function rotulosDaAba(values) {
   return out;
 }
 
-const NOMES_DE_COLUNA = ['CLOSER', 'NOME', 'VENDEDOR', 'RESPONSAVEL', 'RESPONSÁVEL'];
+const NOMES_DE_COLUNA = ['CLOSER', 'NOME', 'VENDEDOR', 'RESPONSAVEL'];
 
 function lerTabela(values, avisos) {
   const ach = acharColunaCash(values);

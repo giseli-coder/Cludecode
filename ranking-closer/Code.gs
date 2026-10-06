@@ -18,10 +18,6 @@
 const METAS_ID  = '17WLibwAUJb9Z6T-z1PPH8JU1h6umR-rw3efBV73MDeA';  // trecho da URL entre /d/ e /edit
 const ABA_METAS = 'CONVERSÃO CLOSER - OUTUBRO  26';                // troque quando virar o mês
 
-// Se a aba tiver mais de uma coluna com "cash" no título e o ranking pegar a errada,
-// escreva aqui o título EXATO da coluna certa. Vazio = o código escolhe sozinho.
-const COLUNA_CASH = '';
-
 const ABA_IMGS = 'Imgs';
 const TOP      = 4;
 
@@ -86,45 +82,6 @@ function acharAba(ss, nome) {
     (parecidas.length ? ' Abas parecidas: ' + parecidas.join(' | ') : ''));
 }
 
-// ═══════════════ LER A TABELA DE CASH COLLECTED ═══════════════
-// Em vez de endereços fixos, procuro o título da coluna ("Cash Collected"),
-// o título "Closer" perto dele e leio os nomes logo abaixo.
-function acharColunaCash(values) {
-  const alvoFixo = norm(COLUNA_CASH);
-  let melhor = null;
-  const maxL = Math.min(values.length, 80);
-  for (let r = 0; r < maxL; r++) {
-    for (let c = 0; c < values[r].length; c++) {
-      const t = norm(values[r][c]);
-      if (!t) continue;
-      if (alvoFixo) {
-        if (t === alvoFixo) return { r: r, c: c, titulo: String(values[r][c]).trim() };
-        continue;
-      }
-      if (t.indexOf('CASH') < 0) continue;
-      if (/META|DELTA|FALTA|TX |CONV|%|PROJET|PREVIS/.test(t)) continue;
-      const score = /COLLECT/.test(t) ? 2 : 1;
-      if (!melhor || score > melhor.score) {
-        melhor = { r: r, c: c, titulo: String(values[r][c]).trim(), score: score };
-      }
-    }
-  }
-  return melhor;
-}
-
-function rotulosDaAba(values) {
-  const out = [];
-  for (let r = 0; r < Math.min(values.length, 12); r++) {
-    values[r].forEach(v => {
-      const t = String(v == null ? '' : v).trim();
-      if (t && isNaN(Number(t)) && out.length < 40 && out.indexOf(t) < 0) out.push(t);
-    });
-  }
-  return out;
-}
-
-const NOMES_DE_COLUNA = ['CLOSER', 'NOME', 'VENDEDOR', 'RESPONSAVEL'];
-
 // ═══════════════ LER OS QUADROS DE CADA CLOSER ═══════════════
 // Cada closer é um quadro assim:
 //        [  NOME DO CLOSER  ]                <- nome (célula mesclada, vale a primeira)
@@ -163,56 +120,6 @@ function lerBlocosCash(values) {
   return { lista: lista, titulo: 'Cash Collected (Realizado)', linha: linha };
 }
 
-function lerTabela(values, avisos) {
-  const ach = acharColunaCash(values);
-  if (!ach) {
-    throw new Error('Não encontrei a coluna "Cash Collected" na aba. Títulos que vi no topo: ' +
-      rotulosDaAba(values).join(' | '));
-  }
-
-  // coluna "Closer": procura o título perto do "Cash" (pode estar 1-2 linhas acima/abaixo)
-  let linhaTit = ach.r, colNome = -1, dist = 99;
-  for (let r = Math.max(0, ach.r - 2); r <= Math.min(values.length - 1, ach.r + 2); r++) {
-    for (let c = 0; c < values[r].length; c++) {
-      if (c !== ach.c && NOMES_DE_COLUNA.indexOf(norm(values[r][c])) >= 0 && Math.abs(r - ach.r) < dist) {
-        dist = Math.abs(r - ach.r); colNome = c; linhaTit = Math.max(ach.r, r);
-      }
-    }
-  }
-
-  // sem título "Closer": a coluna de texto mais à esquerda do cash
-  if (colNome < 0) {
-    for (let c = 0; c < ach.c && colNome < 0; c++) {
-      for (let r = linhaTit + 1; r < Math.min(values.length, linhaTit + 6); r++) {
-        const t = String(values[r][c] == null ? '' : values[r][c]).trim();
-        if (t && !/^[\d.,R$\s%-]+$/.test(t)) { colNome = c; break; }
-      }
-    }
-  }
-  if (colNome < 0) {
-    throw new Error('Achei a coluna "' + ach.titulo + '" mas não achei a coluna com os nomes dos closers (título "Closer").');
-  }
-
-  const lista = [];
-  let vazias = 0;
-  for (let r = linhaTit + 1; r < values.length; r++) {
-    const nome = String(values[r][colNome] == null ? '' : values[r][colNome]).trim();
-    if (!nome) { if (lista.length && ++vazias >= 2) break; continue; }
-    vazias = 0;
-    const n = norm(nome);
-    if (/^(SQUAD|TOTAL|MEDIA|CLOSER|SOMA|TKM)\b/.test(n)) {
-      if (/^TOTAL\b/.test(n) && lista.length) break;
-      continue;
-    }
-    if (lista.some(x => norm(x.nome) === n)) {
-      avisos.push('Nome repetido na tabela: "' + nome + '" (usei a primeira linha).');
-      continue;
-    }
-    lista.push({ nome: nome, cash: dinheiro(values[r][ach.c]) });
-  }
-  return { lista: lista, titulo: ach.titulo, linha: ach.r + 1 };
-}
-
 // ═══════════════ FOTOS (aba Imgs desta planilha) ═══════════════
 function lerFotos() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -238,10 +145,10 @@ function getDados() {
     const values = aba.getRange(1, 1, nL, nC).getValues();
 
     const avisos = [];
-    let tab = lerBlocosCash(values);                       // formato de quadros (um por closer)
-    if (!tab.lista.length) tab = lerTabela(values, avisos); // formato de tabela com coluna "Cash Collected"
+    const tab = lerBlocosCash(values);
     if (!tab.lista.length) {
-      throw new Error('Achei a coluna "' + tab.titulo + '", mas não há nomes de closers abaixo dela.');
+      throw new Error('Não encontrei os quadros dos closers na aba "' + aba.getName() +
+        '". Cada quadro precisa ter o nome no topo, o cabeçalho "Realizado" e a linha "Cash Collected".');
     }
 
     const vistos = [];

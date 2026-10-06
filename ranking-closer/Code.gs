@@ -125,6 +125,44 @@ function rotulosDaAba(values) {
 
 const NOMES_DE_COLUNA = ['CLOSER', 'NOME', 'VENDEDOR', 'RESPONSAVEL'];
 
+// ═══════════════ LER OS QUADROS DE CADA CLOSER ═══════════════
+// Cada closer é um quadro assim:
+//        [  NOME DO CLOSER  ]                <- nome (célula mesclada, vale a primeira)
+//        | Projetado | Provisionado | Realizado
+//   RM / RA / V / ...
+//   Cash Collected   | R$ ...      | R$ ...     | R$ ...   <- uso a coluna "Realizado"
+// Procuro o rótulo "Cash Collected", subo para achar o cabeçalho "Realizado" e o nome.
+function lerBlocosCash(values) {
+  const lista = [];
+  let linha = 0;
+  for (let r = 1; r < values.length; r++) {
+    for (let c = 0; c < values[r].length; c++) {
+      if (norm(values[r][c]) !== 'CASH COLLECTED') continue;
+
+      // cabeçalho "Realizado" acima (até 14 linhas), à direita do rótulo
+      let hr = -1, colReal = -1;
+      for (let k = r - 1; k >= 0 && k >= r - 14 && hr < 0; k--) {
+        for (let j = c + 1; j <= c + 5 && j < values[k].length; j++) {
+          if (norm(values[k][j]) === 'REALIZADO') { hr = k; colReal = j; break; }
+        }
+      }
+      if (hr < 0) continue;
+
+      // nome: primeira célula preenchida acima do cabeçalho, na mesma coluna do rótulo
+      let nome = '';
+      for (let k = hr - 1; k >= 0 && k >= hr - 3; k--) {
+        const t = String(values[k][c] == null ? '' : values[k][c]).trim();
+        if (t && !/^(PROJETADO|PROVISIONADO|REALIZADO)$/.test(norm(t))) { nome = t; break; }
+      }
+      if (!nome) continue;
+
+      if (!linha) linha = r + 1;
+      lista.push({ nome: nome, cash: dinheiro(values[r][colReal]) });
+    }
+  }
+  return { lista: lista, titulo: 'Cash Collected (Realizado)', linha: linha };
+}
+
 function lerTabela(values, avisos) {
   const ach = acharColunaCash(values);
   if (!ach) {
@@ -200,10 +238,17 @@ function getDados() {
     const values = aba.getRange(1, 1, nL, nC).getValues();
 
     const avisos = [];
-    const tab = lerTabela(values, avisos);
+    let tab = lerBlocosCash(values);                       // formato de quadros (um por closer)
+    if (!tab.lista.length) tab = lerTabela(values, avisos); // formato de tabela com coluna "Cash Collected"
     if (!tab.lista.length) {
       throw new Error('Achei a coluna "' + tab.titulo + '", mas não há nomes de closers abaixo dela.');
     }
+
+    const vistos = [];
+    tab.lista = tab.lista.filter(p => {
+      if (vistos.some(n => n === norm(p.nome))) { avisos.push('Nome repetido: "' + p.nome + '" (usei o primeiro quadro).'); return false; }
+      vistos.push(norm(p.nome)); return true;
+    });
 
     const fotos = lerFotos();
     const ranking = tab.lista.map(p => {

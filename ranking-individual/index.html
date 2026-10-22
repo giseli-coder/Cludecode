@@ -106,7 +106,7 @@
     /* ═══════ REGRAS ═══════ */
     .rules{
       display:flex;justify-content:center;gap:36px;
-      padding:6px 0;background:var(--surface);
+      padding:9px 0;background:var(--surface);
       border-bottom:1px solid var(--gray-3);flex-shrink:0;
     }
     .rule{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--gray);letter-spacing:.5px}
@@ -116,6 +116,9 @@
     }
     .b-ra{background:rgba(255,44,44,.12);border:1px solid rgba(255,44,44,.25);color:var(--orange-lt)}
     .b-v{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:#4ade80}
+    .rule-periodo{gap:12px;padding-left:36px;border-left:1px solid var(--gray-3)}
+    .b-per{background:var(--orange);border:1px solid var(--orange);color:#fff;letter-spacing:2px;font-size:11px;padding:4px 12px}
+    .rule-periodo b{font-size:clamp(16px,1.5vw,24px);font-weight:900;letter-spacing:1.5px;color:#fff}
 
     /* ═══════ TOP 4 EM FILEIRA (1º → 4º) ═══════ */
     .row{
@@ -268,6 +271,7 @@
 
   <div class="rules">
     <div class="rule"><span class="badge b-ra">1 PT</span> por RA (Reunião Acontecida)</div>
+    <div class="rule rule-periodo" id="periodo" style="display:none"><span class="badge b-per">PERÍODO DA COMPETIÇÃO</span><b id="periodoTxt"></b></div>
   </div>
 
   <div class="row" id="row"><div class="loader">CARREGANDO RANKING...</div></div>
@@ -330,7 +334,10 @@ function render(res){
 
   const partes = [];
   if(res.fonte && res.fonte.aba)     partes.push('Fonte: <b>' + esc(res.fonte.aba) + '</b>');
-  if(res.fonte && res.fonte.periodo) partes.push('Período: <b>' + esc(res.fonte.periodo) + '</b>');
+  if(res.fonte && res.fonte.periodo){
+    $('periodoTxt').textContent = res.fonte.periodo.replace(' a ', '  →  ');
+    $('periodo').style.display = 'flex';
+  }
   (res.avisos || []).forEach(a => partes.push('<span class="warn">⚠ ' + esc(a) + '</span>'));
   $('footer').innerHTML = partes.map(x => '<span>' + x + '</span>').join('');
 }

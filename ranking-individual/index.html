@@ -265,8 +265,7 @@
   </header>
 
   <div class="rules">
-    <div class="rule"><span class="badge b-ra">1 PT</span> por RA</div>
-    <div class="rule"><span class="badge b-v">2 PTS</span> por Venda</div>
+    <div class="rule"><span class="badge b-ra">1 PT</span> por RA (Reunião Acontecida)</div>
   </div>
 
   <div class="row" id="row"><div class="loader">CARREGANDO RANKING...</div></div>
@@ -319,8 +318,8 @@ function renderCard(p, pos){
         <div class="score-lbl">Pontos</div>
       </div>
       <div class="stats">
-        <div class="stat"><div class="stat-v">${esc(p.ra)}</div><div class="stat-l">RA</div></div>
-        <div class="stat"><div class="stat-v">${esc(p.v)}</div><div class="stat-l">Vendas</div></div>
+        <div class="stat"><div class="stat-v">${esc(p.rm)}</div><div class="stat-l">Marcadas (RM)</div></div>
+        <div class="stat"><div class="stat-v">${esc(p.ns)}</div><div class="stat-l">No show</div></div>
       </div>
     </div>`;
 }

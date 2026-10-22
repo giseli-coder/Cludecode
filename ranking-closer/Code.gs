@@ -12,8 +12,8 @@
  *     - PAGO marcado (✔)
  *     - o closer entre parênteses na coluna SQUAD, ex.: "Danillo (Fink)" -> closer = Fink
  *   O valor somado é a coluna "VALOR (R$)".
- *   Venda de dois closers, ex.: "Oreste (Isis e Fink)": o valor é dividido igualmente
- *   (mude DIVIDIR_VENDA_COMPARTILHADA para false se cada um deve receber o valor inteiro).
+ *   Venda de dois closers, ex.: "Oreste (Isis e Fink)": cada um recebe o valor INTEIRO
+ *   (mude DIVIDIR_VENDA_COMPARTILHADA para true se o valor deve ser dividido entre eles).
  *
  * ESTA PLANILHA (a do ranking) só guarda:
  *   Aba "Imgs": A = nome do closer | B = link da foto no Google Drive
@@ -29,7 +29,7 @@ const ABA_VENDAS = 'Outubro-26';   // só é usado se o GID não for encontrado 
 // Para entrar ou sair alguém, é só mexer nesta lista.
 const PARTICIPANTES = ['Junior', 'Luiz', 'Fernando', 'Tayla', 'Isis'];
 
-const DIVIDIR_VENDA_COMPARTILHADA = true;
+const DIVIDIR_VENDA_COMPARTILHADA = false;
 
 const ABA_IMGS = 'Imgs';
 const TOP      = 5;
@@ -175,7 +175,8 @@ function getDados() {
     const avisos = [];
 
     const cash = {};
-    PARTICIPANTES.forEach(p => { cash[p] = 0; });
+    const detalhe = {};
+    PARTICIPANTES.forEach(p => { cash[p] = 0; detalhe[p] = []; });
     let semDono = 0;
 
     lido.vendas.forEach(v => {
@@ -187,7 +188,7 @@ function getDados() {
       if (!donos.length) { semDono++; return; }
       // dividir pelo número de closers citados na linha (inclusive os que não competem)
       const partes = DIVIDIR_VENDA_COMPARTILHADA ? v.closers.length : 1;
-      donos.forEach(p => { cash[p] += v.valor / partes; });
+      donos.forEach(p => { cash[p] += v.valor / partes; detalhe[p].push(v.cliente + ' = ' + (v.valor / partes)); });
     });
 
     const fotos = lerFotos();
@@ -201,11 +202,24 @@ function getDados() {
       success: true,
       ranking: ranking.slice(0, TOP),
       avisos:  avisos,
-      fonte:   { aba: aba.getName(), vendas: lido.vendas.length, foraDoRanking: semDono }
+      fonte:   { aba: aba.getName(), vendas: lido.vendas.length, foraDoRanking: semDono },
+      detalhe: detalhe
     };
   } catch (e) {
     return { success: false, error: String(e.message || e) };
   }
+}
+
+// ═══════════════ DETALHAR (opcional) ═══════════════
+// Mostra no "Registro de execução" quais vendas entraram na conta de cada closer.
+// Serve para conferir o número: Executar -> detalhar.
+function detalhar() {
+  const r = getDados();
+  if (!r.success) throw new Error(r.error);
+  PARTICIPANTES.forEach(p => {
+    Logger.log(p + ' — R$ ' + r.ranking.find(x => x.nome === p).cash);
+    r.detalhe[p].forEach(l => Logger.log('    ' + l));
+  });
 }
 
 // ═══════════════ AUTORIZAR (rodar 1x antes de publicar) ═══════════════

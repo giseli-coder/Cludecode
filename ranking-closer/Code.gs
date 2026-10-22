@@ -1,13 +1,19 @@
 /**
- * RANKING CLOSER — STAAGE
+ * RANKING CLOSER — V4 COMPANY · M&GA
  * Backend Google Apps Script
  *
- * REGRA:  quem fizer MAIS CASH COLLECTED fica em 1º. Só os PARTICIPANTES competem.
+ * REGRA:  quem tiver MAIS CASH (vendas ASSINADAS e PAGAS) fica em 1º. Top 5.
  * DESEMPATE: ordem alfabética.
  *
  * DE ONDE VÊM OS NÚMEROS
- *   Automático, da planilha de METAS, na aba definida em ABA_METAS
- *   (coluna "Cash Collected" de cada closer). Ninguém lança nada à mão.
+ *   Automático, da planilha "Metrics - Franchising", aba do mês (ex.: "Outubro-26").
+ *   Cada linha é uma venda. Só entra a linha que tiver:
+ *     - STATUS = "Assinado"
+ *     - PAGO marcado (✔)
+ *     - o closer entre parênteses na coluna SQUAD, ex.: "Danillo (Fink)" -> closer = Fink
+ *   O valor somado é a coluna "VALOR (R$)".
+ *   Venda de dois closers, ex.: "Oreste (Isis e Fink)": o valor é dividido igualmente
+ *   (mude DIVIDIR_VENDA_COMPARTILHADA para false se cada um deve receber o valor inteiro).
  *
  * ESTA PLANILHA (a do ranking) só guarda:
  *   Aba "Imgs": A = nome do closer | B = link da foto no Google Drive
@@ -15,20 +21,24 @@
  */
 
 // ═══════════════ CONFIGURAÇÃO (é só aqui que você mexe) ═══════════════
-const METAS_ID  = '17WLibwAUJb9Z6T-z1PPH8JU1h6umR-rw3efBV73MDeA';  // trecho da URL entre /d/ e /edit
-const ABA_METAS = 'CONVERSÃO CLOSER - OUTUBRO  26';                // troque quando virar o mês
+const VENDAS_ID = '16qvgipLeodDaRb2gOjAF5KSSsWoMesQX5uCbjKRotHQ';  // trecho da URL entre /d/ e /edit
+const GID_ABA   = 565140406;       // número que aparece depois de "gid=" na URL da aba do mês
+const ABA_VENDAS = 'Outubro-26';   // só é usado se o GID não for encontrado (troque quando virar o mês)
 
 // Quem participa da competição (o nome pode ser parcial e sem acento: "Junior" encontra "JUNIOR").
 // Para entrar ou sair alguém, é só mexer nesta lista.
-const PARTICIPANTES = ['Junior', 'Luiz', 'Fernando', 'Tayla'];
+const PARTICIPANTES = ['Junior', 'Luiz', 'Fernando', 'Tayla', 'Isis'];
+
+const DIVIDIR_VENDA_COMPARTILHADA = true;
 
 const ABA_IMGS = 'Imgs';
+const TOP      = 5;
 
 // ═══════════════ SERVIR HTML ═══════════════
 // O arquivo HTML do projeto precisa se chamar exatamente "index".
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('index')
-    .setTitle('Ranking Closer — STAAGE')
+    .setTitle('Ranking Closer — M&GA')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -40,7 +50,7 @@ function norm(s) {
     .toUpperCase().replace(/\s+/g, ' ').trim();
 }
 
-// "Rodrigo" ~ "RODRIGO MONTEIRO"  ·  "Leo Vianna" ~ "LEO VIANNA"
+// "Rodrigo" ~ "RODRIGO MONTEIRO"  ·  "Luiz" ~ "LUIZ"
 function mesmoNome(a, b) {
   const x = norm(a), y = norm(b);
   if (!x || !y) return false;
@@ -65,62 +75,77 @@ function dinheiro(v) {
   return neg ? -n : n;
 }
 
-function abrirMetas() {
-  const id = String(METAS_ID || '').trim();
-  if (!id || id.indexOf('COLE_AQUI') === 0) {
-    throw new Error('Cole o ID da planilha de METAS no topo do Code.gs (const METAS_ID).');
-  }
+function abrirVendas() {
+  const id = String(VENDAS_ID || '').trim();
+  if (!id) throw new Error('Cole o ID da planilha de vendas no topo do Code.gs (const VENDAS_ID).');
   return SpreadsheetApp.openById(id);
 }
 
-// Acha a aba ignorando maiúsculas, acentos e espaços duplos.
-function acharAba(ss, nome) {
+// Acha a aba pelo GID (o número depois de "gid=" na URL); se não achar, pelo nome.
+function acharAba(ss, gid, nome) {
   const abas = ss.getSheets();
+  for (let i = 0; i < abas.length; i++) {
+    if (gid && abas[i].getSheetId() === Number(gid)) return abas[i];
+  }
   const alvo = norm(nome);
   for (let i = 0; i < abas.length; i++) {
     if (norm(abas[i].getName()) === alvo) return abas[i];
   }
-  const parecidas = abas.map(a => a.getName()).filter(n => norm(n).indexOf('CONVERSAO CLOSER') === 0);
-  throw new Error('Aba "' + nome + '" não encontrada na planilha de metas.' +
-    (parecidas.length ? ' Abas parecidas: ' + parecidas.join(' | ') : ''));
+  throw new Error('Não achei a aba (gid ' + gid + ' / nome "' + nome + '") na planilha de vendas.');
 }
 
-// ═══════════════ LER OS QUADROS DE CADA CLOSER ═══════════════
-// Cada closer é um quadro assim:
-//        [  NOME DO CLOSER  ]                <- nome (célula mesclada, vale a primeira)
-//        | Projetado | Provisionado | Realizado
-//   RM / RA / V / ...
-//   Cash Collected   | R$ ...      | R$ ...     | R$ ...   <- uso a coluna "Realizado"
-// Procuro o rótulo "Cash Collected", subo para achar o cabeçalho "Realizado" e o nome.
-function lerBlocosCash(values) {
-  const lista = [];
-  let linha = 0;
-  for (let r = 1; r < values.length; r++) {
+// ═══════════════ LER AS VENDAS ═══════════════
+// Procuro o cabeçalho "SQUAD" e, à direita dele, "VALOR", "STATUS" e "PAGO".
+// Cada linha de baixo é uma venda: "Nome do cliente (Closer)".
+function ehPago(v) {
+  if (v === true) return true;
+  const t = norm(v);
+  return t === 'TRUE' || t === 'SIM' || t === 'X' || t === 'PAGO' || t === '✔' || t === '✓';
+}
+
+function ehAssinado(v) {
+  const t = norm(v);
+  return t.indexOf('ASSINAD') === 0;
+}
+
+// "Oreste (Isis e Fink)" -> ["Isis", "Fink"]   ·   "Wellington ( Luiz)" -> ["Luiz"]
+function closersDaLinha(texto) {
+  const m = String(texto == null ? '' : texto).match(/\(([^()]*)\)/g);
+  if (!m) return [];
+  const dentro = m[m.length - 1].replace(/^\(|\)$/g, '');
+  return dentro.split(/\s*(?:,|;|\/|\+|&|\be\b)\s*/i).map(s => s.trim()).filter(Boolean);
+}
+
+function lerVendas(values) {
+  // cabeçalho: linha onde existe a célula "SQUAD"
+  let hr = -1, cSq = -1;
+  for (let r = 0; r < Math.min(values.length, 20) && hr < 0; r++) {
     for (let c = 0; c < values[r].length; c++) {
-      if (norm(values[r][c]) !== 'CASH COLLECTED') continue;
-
-      // cabeçalho "Realizado" acima (até 14 linhas), à direita do rótulo
-      let hr = -1, colReal = -1;
-      for (let k = r - 1; k >= 0 && k >= r - 14 && hr < 0; k--) {
-        for (let j = c + 1; j <= c + 5 && j < values[k].length; j++) {
-          if (norm(values[k][j]) === 'REALIZADO') { hr = k; colReal = j; break; }
-        }
-      }
-      if (hr < 0) continue;
-
-      // nome: primeira célula preenchida acima do cabeçalho, na mesma coluna do rótulo
-      let nome = '';
-      for (let k = hr - 1; k >= 0 && k >= hr - 3; k--) {
-        const t = String(values[k][c] == null ? '' : values[k][c]).trim();
-        if (t && !/^(PROJETADO|PROVISIONADO|REALIZADO)$/.test(norm(t))) { nome = t; break; }
-      }
-      if (!nome) continue;
-
-      if (!linha) linha = r + 1;
-      lista.push({ nome: nome, cash: dinheiro(values[r][colReal]) });
+      if (norm(values[r][c]) === 'SQUAD') { hr = r; cSq = c; break; }
     }
   }
-  return { lista: lista, titulo: 'Cash Collected (Realizado)', linha: linha };
+  if (hr < 0) throw new Error('Não achei o cabeçalho "SQUAD" nas primeiras linhas da aba.');
+
+  let cVal = -1, cSt = -1, cPg = -1;
+  for (let c = cSq; c < Math.min(values[hr].length, cSq + 20); c++) {
+    const t = norm(values[hr][c]);
+    if (cVal < 0 && t.indexOf('VALOR') === 0) cVal = c;
+    if (cSt < 0 && t === 'STATUS') cSt = c;
+    if (cPg < 0 && t === 'PAGO') cPg = c;
+  }
+  if (cVal < 0 || cSt < 0 || cPg < 0) {
+    throw new Error('No cabeçalho achei SQUAD, mas faltou: ' +
+      [cVal < 0 ? 'VALOR (R$)' : '', cSt < 0 ? 'STATUS' : '', cPg < 0 ? 'PAGO' : ''].filter(Boolean).join(', ') + '.');
+  }
+
+  const vendas = [];
+  for (let r = hr + 1; r < values.length; r++) {
+    const closers = closersDaLinha(values[r][cSq]);
+    if (!closers.length) continue;
+    if (!ehAssinado(values[r][cSt]) || !ehPago(values[r][cPg])) continue;
+    vendas.push({ cliente: String(values[r][cSq]).trim(), closers: closers, valor: dinheiro(values[r][cVal]) });
+  }
+  return { vendas: vendas, linhaCab: hr + 1 };
 }
 
 // ═══════════════ FOTOS (aba Imgs desta planilha) ═══════════════
@@ -140,37 +165,43 @@ function lerFotos() {
 // ═══════════════ LER DADOS (chamado pela tela) ═══════════════
 function getDados() {
   try {
-    const metas = abrirMetas();
-    const aba   = acharAba(metas, ABA_METAS);
+    const aba = acharAba(abrirVendas(), GID_ABA, ABA_VENDAS);
 
-    const nL = Math.min(aba.getLastRow(), 200);
-    const nC = Math.min(aba.getLastColumn(), 40);
+    const nL = Math.min(aba.getLastRow(), 400);
+    const nC = Math.min(aba.getLastColumn(), 80);
     const values = aba.getRange(1, 1, nL, nC).getValues();
 
+    const lido = lerVendas(values);
     const avisos = [];
-    const tab = lerBlocosCash(values);
-    if (!tab.lista.length) {
-      throw new Error('Não encontrei os quadros dos closers na aba "' + aba.getName() +
-        '". Cada quadro precisa ter o nome no topo, o cabeçalho "Realizado" e a linha "Cash Collected".');
-    }
+
+    const cash = {};
+    PARTICIPANTES.forEach(p => { cash[p] = 0; });
+    let semDono = 0;
+
+    lido.vendas.forEach(v => {
+      const donos = [];
+      v.closers.forEach(c => {
+        const p = PARTICIPANTES.find(x => mesmoNome(x, c));
+        if (p && donos.indexOf(p) < 0) donos.push(p);
+      });
+      if (!donos.length) { semDono++; return; }
+      // dividir pelo número de closers citados na linha (inclusive os que não competem)
+      const partes = DIVIDIR_VENDA_COMPARTILHADA ? v.closers.length : 1;
+      donos.forEach(p => { cash[p] += v.valor / partes; });
+    });
 
     const fotos = lerFotos();
     const ranking = PARTICIPANTES.map(nome => {
-      const b = tab.lista.find(x => mesmoNome(x.nome, nome));
-      if (!b) {
-        avisos.push('Não achei "' + nome + '" na aba de metas (nomes lá: ' + tab.lista.map(x => x.nome).join(', ') + ').');
-      }
       const f = fotos.find(x => mesmoNome(x.nome, nome));
-      return { nome: nome, cash: b ? b.cash : 0, foto: f ? f.url : '' };
+      return { nome: nome, cash: Math.round(cash[nome] * 100) / 100, foto: f ? f.url : '' };
     });
-
     ranking.sort((a, b) => b.cash - a.cash || a.nome.localeCompare(b.nome, 'pt-BR'));
 
     return {
       success: true,
-      ranking: ranking,
+      ranking: ranking.slice(0, TOP),
       avisos:  avisos,
-      fonte:   { aba: aba.getName() }
+      fonte:   { aba: aba.getName(), vendas: lido.vendas.length, foraDoRanking: semDono }
     };
   } catch (e) {
     return { success: false, error: String(e.message || e) };
@@ -178,10 +209,10 @@ function getDados() {
 }
 
 // ═══════════════ AUTORIZAR (rodar 1x antes de publicar) ═══════════════
-// Abre a planilha de metas para o Google pedir a permissão. Não altera nada.
+// Abre a planilha de vendas para o Google pedir a permissão. Não altera nada.
 function autorizar() {
   const r = getDados();
   if (!r.success) throw new Error(r.error);
   r.ranking.forEach((p, i) => Logger.log((i + 1) + 'º ' + p.nome + ' — R$ ' + p.cash));
-  r.avisos.forEach(a => Logger.log('AVISO: ' + a));
+  Logger.log('Vendas assinadas e pagas: ' + r.fonte.vendas + ' (de outros closers: ' + r.fonte.foraDoRanking + ')');
 }

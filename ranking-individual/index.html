@@ -120,7 +120,7 @@
     .b-per{background:var(--orange);border:1px solid var(--orange);color:#fff;letter-spacing:2px;font-size:11px;padding:4px 12px}
     .rule-periodo b{font-size:clamp(16px,1.5vw,24px);font-weight:900;letter-spacing:1.5px;color:#fff}
 
-    /* ═══════ TOP 4 EM FILEIRA (1º → 4º) ═══════ */
+    /* ═══════ TOP 5 EM FILEIRA (1º → 5º) ═══════ */
     .row{
       flex:1;min-height:0;width:100%;
       display:flex;align-items:flex-end;justify-content:center;
@@ -141,17 +141,18 @@
       border-radius:16px 16px 0 0;z-index:2;
     }
 
-    /* degraus: o 1º é o mais alto, o 4º o mais baixo */
-    .p1{height:100%;z-index:4}
-    .p2{height:95%;z-index:3}
-    .p3{height:90%;z-index:2}
-    .p4{height:85%;z-index:1}
+    /* degraus: o 1º é o mais alto, o 5º o mais baixo */
+    .p1{height:100%;z-index:5}
+    .p2{height:95%;z-index:4}
+    .p3{height:90%;z-index:3}
+    .p4{height:85%;z-index:2}
+    .p5{height:80%;z-index:1}
 
     .p1{border-color:var(--orange);box-shadow:0 0 60px rgba(255,44,44,.22),0 0 100px rgba(255,44,44,.07)}
     .p1::before{background:linear-gradient(90deg,var(--orange),var(--orange-lt));box-shadow:0 0 14px var(--orange-glow);height:5px}
     .p2::before{background:linear-gradient(90deg,var(--silver),#ddd)}
     .p3::before{background:linear-gradient(90deg,var(--bronze),#e0a060)}
-    .p4::before{background:linear-gradient(90deg,#5c5c5c,#8a8a8a)}
+    .p4::before,.p5::before{background:linear-gradient(90deg,#5c5c5c,#8a8a8a)}
 
     .card-rank{
       position:absolute;top:-30px;left:50%;transform:translateX(-50%);
@@ -244,7 +245,7 @@
       html,body{overflow:auto;height:auto}
       .app{height:auto;min-height:100vh}
       .row{flex-wrap:wrap;align-items:stretch;padding-top:54px}
-      .card,.p1,.p2,.p3,.p4{flex:1 1 42%;height:480px}
+      .card,.p1,.p2,.p3,.p4,.p5{flex:1 1 42%;height:480px}
       .hdr{flex-wrap:wrap;gap:8px;justify-content:center}
       .hdr-center{position:static;transform:none}
     }
@@ -281,9 +282,9 @@
 </div>
 
 <script>
-const TOP     = 4;     // quantos aparecem no ranking
+const TOP     = 5;     // quantos aparecem no ranking
 const REFRESH = 60;    // segundos entre atualizações
-const LABELS  = {1:'CAMPEÃO', 2:'2º LUGAR', 3:'3º LUGAR', 4:'4º LUGAR'};
+const LABELS  = {1:'CAMPEÃO', 2:'2º LUGAR', 3:'3º LUGAR', 4:'4º LUGAR', 5:'5º LUGAR'};
 
 const $ = id => document.getElementById(id);
 let lastSig = '';

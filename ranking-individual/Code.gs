@@ -1,5 +1,5 @@
 /**
- * RANKING INDIVIDUAL SDR — STAAGE
+ * RANKING INDIVIDUAL SDR — V4 COMPANY · M&GA
  * Backend Google Apps Script
  *
  * PONTUAÇÃO:   RA (Reunião Acontecida) = 1 ponto
@@ -36,7 +36,7 @@ const ABA_IMGS    = 'Imgs';
 // O arquivo HTML do projeto precisa se chamar exatamente "index".
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('index')
-    .setTitle('Ranking Individual SDR — STAAGE')
+    .setTitle('Ranking Individual SDR — M&GA')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 

@@ -7,7 +7,8 @@
  *
  * DE ONDE VÊM OS NÚMEROS
  *   Automático, da planilha "[Pré-vendas] - Métricas Individuais": para cada SDR somo a coluna
- *   "RA (Total)" de todos os grupos (FR, AS, M&GA) em todos os dias do mês. Ninguém lança nada à mão.
+ *   "RA (Total)" de todos os grupos (FR, AS, M&GA), só nos dias de DATA_INICIO até DATA_FIM.
+ *   Ninguém lança nada à mão.
  *
  * ESTA PLANILHA (a do ranking) só guarda:
  *   Aba "Equipes": coluna B = nomes de quem COMPETE  (se ficar vazia, entram todos os SDRs da planilha)
@@ -23,6 +24,10 @@ const GID_ABA     = 491349697;           // número que aparece depois de "gid="
 const ABA_METRICAS = 'Outubro26';        // só é usado se o GID não for encontrado (troque quando virar o mês)
 
 const PTS_RA = 1;
+
+// Período contado no ranking (dd/mm/aaaa). Só os dias de DATA_INICIO até DATA_FIM entram na soma.
+const DATA_INICIO = '21/10/2026';
+const DATA_FIM    = '31/10/2026';
 
 const ABA_EQUIPES = 'Equipes';
 const ABA_IMGS    = 'Imgs';
@@ -93,6 +98,15 @@ function ehData(v) {
     /^\d{1,2}\/\d{1,2}\/\d{4}/.test(String(v == null ? '' : v).trim());
 }
 
+// Transforma uma data (célula de data ou texto dd/mm/aaaa) em número aaaammdd, para comparar períodos.
+function chaveData(v, tz) {
+  if (Object.prototype.toString.call(v) === '[object Date]') {
+    return Number(Utilities.formatDate(v, tz, 'yyyyMMdd'));
+  }
+  const m = String(v == null ? '' : v).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return m ? Number(m[3]) * 10000 + Number(m[2]) * 100 + Number(m[1]) : 0;
+}
+
 function textoCelula(v) {
   return String(v == null ? '' : v).trim();
 }
@@ -112,7 +126,7 @@ function donoDaColuna(values, hr, c) {
   return '';
 }
 
-function lerBlocos(values, avisos) {
+function lerBlocos(values, avisos, tz) {
   // linha de títulos
   let hr = -1;
   for (let r = 0; r < Math.min(values.length, 15) && hr < 0; r++) {
@@ -122,36 +136,33 @@ function lerBlocos(values, avisos) {
   }
   if (hr < 0) return { blocos: [], periodo: '' };
 
-  // linhas dos dias (coluna A é uma data)
+  // linhas dos dias (coluna A é uma data) dentro do período DATA_INICIO .. DATA_FIM
+  const ini = chaveData(DATA_INICIO, tz), fim = chaveData(DATA_FIM, tz);
   const dias = [];
   for (let r = hr + 1; r < values.length; r++) {
-    if (ehData(values[r][0])) dias.push(r);
+    if (!ehData(values[r][0])) continue;
+    const k = chaveData(values[r][0], tz);
+    if (k >= ini && k <= fim) dias.push(r);
   }
-  if (!dias.length) avisos.push('Não encontrei linhas de data (coluna A) abaixo dos títulos.');
+  if (!dias.length) avisos.push('Não encontrei nenhum dia entre ' + DATA_INICIO + ' e ' + DATA_FIM + ' (coluna A da aba).');
 
   const pessoas = [];
   const achar = nome => {
     let p = pessoas.find(x => norm(x.nome) === norm(nome));
-    if (!p) { p = { nome: nome, ra: 0, rm: 0, ns: 0 }; pessoas.push(p); }
+    if (!p) { p = { nome: nome, ra: 0 }; pessoas.push(p); }
     return p;
   };
 
   for (let c = 0; c < values[hr].length; c++) {
     const titulo = norm(values[hr][c]);
-    const campo = RE_RA_TOTAL.test(titulo) ? 'ra' : titulo === 'RM' ? 'rm' : titulo === 'NS' ? 'ns' : '';
-    if (!campo) continue;
+    if (!RE_RA_TOTAL.test(titulo)) continue;
     const dono = donoDaColuna(values, hr, c);
     if (!dono) continue;
     const p = achar(dono);
-    dias.forEach(r => { p[campo] += num(values[r][c]); });
+    dias.forEach(r => { p.ra += num(values[r][c]); });
   }
 
-  let periodo = '';
-  if (dias.length) {
-    const fmt = v => Object.prototype.toString.call(v) === '[object Date]'
-      ? Utilities.formatDate(v, Session.getScriptTimeZone(), 'dd/MM/yyyy') : textoCelula(v).slice(0, 10);
-    periodo = fmt(values[dias[0]][0]) + ' a ' + fmt(values[dias[dias.length - 1]][0]);
-  }
+  const periodo = DATA_INICIO + ' a ' + DATA_FIM;
   return { blocos: pessoas, periodo: periodo };
 }
 
@@ -184,14 +195,15 @@ function lerFotos(ss) {
 function getDados() {
   try {
     const ssRank = SpreadsheetApp.getActiveSpreadsheet();
-    const aba    = acharAba(abrirMetricas(), GID_ABA, ABA_METRICAS);
+    const ss     = abrirMetricas();
+    const aba    = acharAba(ss, GID_ABA, ABA_METRICAS);
 
     const nL = Math.min(aba.getLastRow(), 120);
     const nC = Math.min(aba.getLastColumn(), 250);
     const values = aba.getRange(1, 1, nL, nC).getValues();
 
     const avisos = [];
-    const lido   = lerBlocos(values, avisos);
+    const lido   = lerBlocos(values, avisos, ss.getSpreadsheetTimeZone());
     const blocos = lido.blocos;
     if (!blocos.length) {
       throw new Error('Não encontrei as colunas "RA (Total)" na aba "' + aba.getName() +
@@ -214,8 +226,6 @@ function getDados() {
       return {
         nome:    nome,
         ra:      ra,
-        rm:      b ? b.rm : 0,
-        ns:      b ? b.ns : 0,
         pontos:  ra * PTS_RA,
         foto:    f ? f.url : '',
         semDados: !b
@@ -241,6 +251,6 @@ function getDados() {
 function autorizar() {
   const r = getDados();
   if (!r.success) throw new Error(r.error);
-  r.ranking.forEach((p, i) => Logger.log((i + 1) + 'º ' + p.nome + ' — ' + p.pontos + ' pts (RA ' + p.ra + ', RM ' + p.rm + ', NS ' + p.ns + ')'));
+  r.ranking.forEach((p, i) => Logger.log((i + 1) + 'º ' + p.nome + ' — ' + p.pontos + ' pts (RA ' + p.ra + ')'));
   r.avisos.forEach(a => Logger.log('AVISO: ' + a));
 }
